@@ -18,7 +18,56 @@ import random, util
 
 
 from game import Agent
-
+def eating_all_food(state,gameState):
+  position, foodlist = state
+  "*** YOUR CODE HERE ***"
+  #create graph from food grid.
+  foodlist.append(position)
+  if(gameState.isWin()or gameState.isLose()):
+      return []
+  vertex = {}
+  edges = {}
+  for i in enumerate(foodlist):
+      key = i[1]
+      vertex[key] = i[0]
+  pq,vertice,edge = convertograph(foodlist,vertex)
+  # disjoint for mst
+  cluster = {}
+  rank = {}
+  for i in vertice.values():
+      cluster[i] = i
+      rank[i] = 0
+  estimate = []
+  tuple=set()
+  while pq.isEmpty() == False:
+      edge = pq.pop()
+      x,y = edge[0],edge[1]
+      # find parents
+      while(cluster[x] != x):
+          x = cluster[x]
+      while(cluster[y]!=y):
+          y = cluster[y]
+      # update ranks if each disjoint sets
+      if(x != y):
+          if(rank[x]>rank[y]):
+              cluster[x] = y
+          elif(rank[x]<rank[y]):
+              cluster[y] = x
+          elif(rank[x]==rank[y]):
+              cluster[x]=y
+              rank[x] = rank[x]+1
+          estimate += edge
+  return estimate
+def convertograph(foodlist,vertex,edges={}):
+  pq = util.PriorityQueue()
+  edges={}
+  for j in (foodlist):
+      for k in foodlist:
+          if(j != k and (((vertex[j],vertex[k]) not in edges.keys()))):
+              distance = manhattanDistance(j,k)
+              edges[(vertex[j],vertex[k])] = distance
+              pq.push((vertex[j],vertex[k],distance),distance)
+  return (pq,vertex,edges)
 class ReflexAgent(Agent):
     """
       A reflex agent chooses an action at each choice point by examining
@@ -276,14 +325,72 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
       return bestMove
       
 def betterEvaluationFunction(currentGameState):
-    """
+  """
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
       evaluation function (question 5).
 
       DESCRIPTION: <write something here so we know what you did>
-    """
-    "*** YOUR CODE HERE ***"
+      Evalaution function uses weighted average calculation function based different features.
+      - Closest Distance to scared ghost(ghost-hunting)
+      - Closest Distance to capsules(pellet-nabbing)
+      - Distance to closest to food pellet(good-gobbling)
+      - Distance to closest non-scared ghost.
+      - Number of food pellets left.
+      - Number of capsules left.   
+  """
+  "*** YOUR CODE HERE ***"
+  distance = {"scare-Ghost": None,"food-pellet-num": None,"capsules-num": None,"capsules-dis": None,"food-dis": None,"non-scare-Ghost": None}
+  position = currentGameState.getPacmanPosition()
+  food = currentGameState.getFood()
+  ghosts = currentGameState.getGhostStates()
+  capsules = currentGameState.getCapsules()
+  # number of capsules left
+  distance["capsules-num"] = len(capsules)
+  if(len(capsules)> 0):
+    cap_dis = []
+    for i in capsules:
+      cap_dis.append(manhattanDistance(i,position))
+    distance["capsules-dis"] = 1/min(cap_dis)
+  else:
+    distance["capsules-dis"] = 0
+  # calculate scard ghost dist
+  newGhostStates = currentGameState.getGhostStates()
+  non_scared_ghosts = [ghosts for ghosts in newGhostStates if ghosts.scaredTimer == 0]
+  if(len(non_scared_ghosts)>0):
+    non_scar_dis = []
+    for i in non_scared_ghosts:
+      non_scar_dis.append(manhattanDistance(i.getPosition(),position))
+    min_dis = min(non_scar_dis)
+    if(min_dis < 1):
+      distance["non-scare-Ghost"] = 100000
+    else:
+      distance["non-scare-Ghost"] = 1/min_dis
+  else:
+    distance["non-scare-Ghost"] = 0
+  # caclulate for scared  ghosts
+  newGhostStates = currentGameState.getGhostStates()
+  non_scared_ghosts = [ghosts for ghosts in newGhostStates if ghosts.scaredTimer > 0]
+  if(len(non_scared_ghosts)>0):
+    non_scar_dis = []
+    for i in non_scared_ghosts:
+      non_scar_dis.append(manhattanDistance(i.getPosition(),position))
+    min_dis = min(non_scar_dis)
+    if(min_dis < 1):
+      distance["scare-Ghost"] = 100
+    else:
+      distance["scare-Ghost"] = 1/min_dis
+  else:
+    distance["scare-Ghost"] = 0
+  # get esitmate of the eating all the food dots from current postion
+  distance["food-pellet-num"] = len(food.asList())
+  estimate = eating_all_food((position,food.asList()),currentGameState)
+  if(len(estimate) == 0):
+    distance["food-dis"] = 0
+  else:
+    distance["food-dis"] = 1/len(estimate)
+  # distance = {"scare-Ghost": None,"food-pellet-num": None,"capsules-num": None,"capsules-dis": None,"food-dis": None,"non-scare-Ghost": None}    
+  score = 7*distance["scare-Ghost"]-20*distance["food-pellet-num"]-90*distance["capsules-num"]+7*distance["capsules-dis"]+2*distance["food-dis"]-6*distance["non-scare-Ghost"]
+  return score
     
-
 # Abbreviation
 better = betterEvaluationFunction
