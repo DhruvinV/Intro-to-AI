@@ -383,7 +383,7 @@ def betterEvaluationFunction(currentGameState):
     distance["scare-Ghost"] = 0
   # get esitmate of the eating all the food dots from current postion
   distance["food-pellet-num"] = len(food.asList())
-  length = len(food.asList())//2
+  length = len(food.asList())//4
   foodinput= food.asList()[0:length]
   estimate = eating_all_food((position,foodinput),currentGameState)
   if(len(estimate) == 0):
