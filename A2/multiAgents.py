@@ -23,7 +23,7 @@ def eating_all_food(state,gameState):
   "*** YOUR CODE HERE ***"
   #create graph from food grid.
   foodlist.append(position)
-  if(gameState.isWin()or gameState.isLose()):
+  if(gameState.isWin()or gameState.isLose()or len(foodlist)==0):
       return []
   vertex = {}
   edges = {}
@@ -383,7 +383,9 @@ def betterEvaluationFunction(currentGameState):
     distance["scare-Ghost"] = 0
   # get esitmate of the eating all the food dots from current postion
   distance["food-pellet-num"] = len(food.asList())
-  estimate = eating_all_food((position,food.asList()),currentGameState)
+  length = len(food.asList())//2
+  foodinput= food.asList()[0:length]
+  estimate = eating_all_food((position,foodinput),currentGameState)
   if(len(estimate) == 0):
     distance["food-dis"] = 0
   else:
