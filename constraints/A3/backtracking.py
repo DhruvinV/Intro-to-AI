@@ -174,28 +174,32 @@ def FC(unAssignedVars, csp, allSolutions, trace):
     #but it can be useful for debugging
     if(unAssignedVars.empty()):
         if trace: print "{} Solution Found".format(csp.name())
-        if(allSolutions):
-            return
-        else:
-            soln = []
-            for v in csp.variables():
-                soln.append((v, v.getValue()))
-            return soln
+        soln = []
+        for v in csp.variables():
+            soln.append((v, v.getValue()))
+        return [soln]
     var = unAssignedVars.extract()
+    solns = []
+    bt_search.nodesExplored += 1
     for val in var.curDomain():
         var.setValue(val)
         noDWo = True
         for constraint in csp.constraintsOf(var):
             if(constraint.numUnassigned()==1):
-                if FCCheck(constraint,var,val) == 1:
+                if FCCheck(constraint,var,val) == "DWO":
                     noDWo = False
                     break
         if(noDWo):
-            FC(unAssignedVars, csp, allSolutions, trace)
-        restoreValues(var,val)
-    var.setValue(None)
+            result = FC(unAssignedVars, csp, allSolutions, trace)
+            if(result!=[]):
+                solns.extend(result)
+            if(len(solns) > 0 and not allSolutions):
+                var.restoreValues(var,val)
+                break
+        var.restoreValues(var,val)
+    var.unAssign()
     unAssignedVars.insert(var)
-    return
+    return solns
 
 def GacEnforce(constraints, csp, reasonVar, reasonVal):
     '''Establish GAC on constraints by pruning values
@@ -205,8 +209,18 @@ def GacEnforce(constraints, csp, reasonVar, reasonVal):
     #your implementation for Question 3 goes in this function body
     #you must not change the function parameters
     #ensure that you return one of "OK" or "DWO"
-    util.raiseNotDefined()
-
+    while(constraints):
+        constr = constraints.pop()
+        for var in constr.scope():
+            for val in var.curDomain():
+                if(not constr.hasSupport(var,val)):
+                    var.pruneValue(val,reasonVar,reasonVal)
+                    if(var.curDomainSize() == 0):
+                        return "DWO"
+                    for recheck in csp.constraintsOf(var):
+                        if ((recheck is not constr) and ( not recheck in constraints)):
+                            constraints.insert(-1,recheck)
+    return "OK"
 def GAC(unAssignedVars, csp, allSolutions, trace):
     '''GAC search.
        unAssignedVars is the current set of
@@ -227,5 +241,28 @@ def GAC(unAssignedVars, csp, allSolutions, trace):
     #You must not change the function parameters.
     #implementing support for "trace" is optional, but it might
     #help you in debugging
-
-    util.raiseNotDefined()
+    if unAssignedVars.empty():
+        if trace: print "{} Solution Found".format(csp.name())
+        soln = []
+        for v in csp.variables():
+            soln.append((v, v.getValue()))
+        return [soln]
+    bt_search.nodesExplored +=1
+    solns = []
+    var = unAssignedVars.extract()
+    for val in var.curDomain():
+        var.setValue(val)
+        noDWO = True
+        if(GacEnforce(csp.constraintsOf(var),csp,var,val) == "DWO"):
+            noDWO = False
+        if noDWO==True:
+            result = GAC(unAssignedVars, csp, allSolutions, trace)
+            if(result!=[]):
+                solns.extend(result)
+            if(len(solns) > 0 and not allSolutions):
+                var.restoreValues(var,val)
+                break
+        var.restoreValues(var,val)
+    var.unAssign()
+    unAssignedVars.insert(var)
+    return solns

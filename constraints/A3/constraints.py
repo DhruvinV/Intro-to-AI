@@ -122,8 +122,11 @@ class QueensTableConstraint(TableConstraint):
         self._name = "Queen_" + name
         scope = [qi,qj]
         satAssignments = []
-        print(qi,qj,i,j)
-
+        for k in (qi.domain()):
+            for l in (qj.domain()):
+                if(k!=l and (abs(i-j)!=abs(k-l))):
+                    satAssignments.append([k,l])
+        TableConstraint.__init__(self,self._name,scope,satAssignments)
 
 class NeqConstraint(Constraint):
     '''Neq constraint between two variables'''
@@ -288,4 +291,4 @@ class NValuesConstraint(Constraint):
                  a similar approach is applicable here (but of course
                  there are other ways as well)
         '''
-        util.raiseNotDefined()
+        # util.raiseNotDefined()

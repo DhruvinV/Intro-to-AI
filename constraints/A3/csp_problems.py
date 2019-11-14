@@ -32,7 +32,7 @@ def nQueens(n, tableCnstr):
     csp = CSP("{}-Queens".format(n), vars, cons)
     return csp
 
-def solve_nQueens(n, algo, allsolns, tableCnstr=False, variableHeuristic='fixed', trace=False):
+def solve_nQueens(n, algo, allsolns, tableCnstr=False, variableHeuristic='fixed', trace=True):
     '''Create and solve an nQueens CSP problem. The first
        parameer is 'n' the number of queens in the problem,
        The second specifies the search algorithm to use (one
@@ -134,19 +134,19 @@ def sudokuCSP(initial_sudoku_board, model='neq'):
     #Set up the constraints
     #row constraints
     constraint_list = []
-
     for row in var_array:
         if model == 'neq':
             constraint_list.extend(post_all_pairs(row))
         elif model == 'alldiff':
-            util.raiseNotDefined()
+            # print(AllDiffConstraint("row",row))
+            constraint_list.insert(-1,AllDiffConstraint("row",row))
 
     for colj in range(len(var_array[0])):
         scope = map(lambda row: row[colj], var_array)
         if model == 'neq':
             constraint_list.extend(post_all_pairs(scope))
         elif model == 'alldiff':
-            util.raiseNotDefined()
+            constraint_list.insert(-1,(AllDiffConstraint("col",scope)))
 
     for i in [0, 3, 6]:
         for j in [0, 3, 6]:
@@ -158,7 +158,7 @@ def sudokuCSP(initial_sudoku_board, model='neq'):
             if model == 'neq':
                 constraint_list.extend(post_all_pairs(scope))
             elif model == 'alldiff':
-                util.raiseNotDefined()
+                constraint_list.insert(-1,(AllDiffConstraint("i,j",scope)))
 
     vars = [var for row in var_array for var in row]
     return CSP("Sudoku", vars, constraint_list)
