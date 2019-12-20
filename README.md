@@ -1,2 +1,2 @@
-Some fun games implemented by me for CSC384-Introduction to Artificial Intelligence. Uses Various Algorithm which are implemeted using 
-Artificial Intelligence: A Modern Approach 
+My implementation for CSC384-Introduction to Artificial Intelligence assignments. 
+The repo includes Berkley AI Pacman projects and solutions to some constraint satisfaction problems. 
