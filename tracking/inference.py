@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -201,7 +201,7 @@ class ExactInference(InferenceModule):
             else:
                 allPossible[p] = 0.0
                 allPossible[self.getJailPosition()] = 1.0
-        #   if the ghost is caught. 
+        #   if the ghost is caught.
         "*** END YOUR CODE HERE ***"
         allPossible.normalize()
         self.beliefs = allPossible
@@ -326,7 +326,7 @@ class ParticleFilter(InferenceModule):
         self.particles = []
         "*** YOUR CODE HERE ***"
         infinite_cycle = itertools.cycle(self.legalPositions)
-        while(len(self.particles) < self.numParticles): 
+        while(len(self.particles) < self.numParticles):
             self.particles.append(next(infinite_cycle))
         "*** END YOUR CODE HERE ***"
 
@@ -416,7 +416,7 @@ class ParticleFilter(InferenceModule):
         for i in self.particles:
             result[i] += 1
         result.normalize()
-        return result   
+        return result
         "*** END YOUR CODE HERE ***"
 
 
@@ -491,7 +491,13 @@ class JointParticleFilter:
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
-
+        # generate all possible combinatios of legal position for
+        possiblePositions = list(itertools.product(self.legalPositions,repeat=self.numGhosts))
+        self.particles = []
+        random.shuffle(possiblePositions)
+        infinite_cycle = itertools.cycle(possiblePositions)
+        while(len(self.particles) < self.numParticles):
+            self.particles.append(next(infinite_cycle))
         "*** END YOUR CODE HERE ***"
 
 
@@ -557,9 +563,27 @@ class JointParticleFilter:
         if len(noisyDistances) < self.numGhosts:
             return
         emissionModels = [busters.getObservationDistribution(dist) for dist in noisyDistances]
-
         "*** YOUR CODE HERE ***"
-
+        allPossible  = util.Counter()
+        for k in range(len(self.particles)):
+            s = 1.0
+            for j in range(self.numGhosts):
+                if(noisyDistances[j] is not None):
+                    s*=emissionModels[j][util.manhattanDistance(self.particles[k][j],pacmanPosition)]
+                else:
+                     self.particles[k] = self.getParticleWithGhostInJail(self.particles[k], j)
+            allPossible[self.particles[k]]+=s
+        if(max(allPossible.values())==0):
+            self.initializeParticles()
+            for p in range(len(self.particles)):
+                for i in range(self.numGhosts):
+                    if noisyDistances[i] is None:
+                        self.particles[p] = self.getParticleWithGhostInJail(self.particles[p], i)
+        else:
+            sampled = []
+            while(len(sampled)<self.numParticles):
+                sampled.append(util.sample(allPossible))
+            self.particles = sampled
         "*** END YOUR CODE HERE ***"
 
 
@@ -620,16 +644,21 @@ class JointParticleFilter:
         for oldParticle in self.particles:
             newParticle = list(oldParticle) # A list of ghost positions
             # now loop through and update each entry in newParticle...
-
             "*** YOUR CODE HERE ***"
-
+            for ghosts in range(self.numGhosts):
+                newPosDist = getPositionDistributionForGhost(setGhostPositions(gameState, newParticle), ghosts, self.ghostAgents[ghosts])
+                newParticle[ghosts] = util.sample(newPosDist)
             "*** END YOUR CODE HERE ***"
             newParticles.append(tuple(newParticle))
         self.particles = newParticles
 
     def getBeliefDistribution(self):
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        result = util.Counter()
+        for i in self.particles:
+            result[i] += 1
+        result.normalize()
+        return result
         "*** END YOUR CODE HERE ***"
 
 
@@ -656,4 +685,3 @@ def setGhostPositions(gameState, ghostPositions):
         conf = game.Configuration(pos, game.Directions.STOP)
         gameState.data.agentStates[index + 1] = game.AgentState(conf, False)
     return gameState
-
